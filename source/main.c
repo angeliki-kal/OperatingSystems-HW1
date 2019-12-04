@@ -1,10 +1,18 @@
 #include "Globals.h"
+#include <sys/shm.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "SharedMem.h"
 
-
+struct my_object {
+  float base;
+  int exponent;
+};
 void GetArgs(int argc, char** argv);
 
 int main(int argc, char** argv) {
   GetArgs(argc, argv);
+
 
 
 

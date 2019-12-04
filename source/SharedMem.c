@@ -1,12 +1,4 @@
-#include <sys/shm.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include "SharedMem.h"
 
-struct my_object {
-  float base;
-  int exponent;
-};
 
 int key = 99999;
 int segment_id;
