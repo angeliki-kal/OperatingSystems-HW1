@@ -5,10 +5,12 @@ void GetArgs(int argc, char** argv);
 
 int main(int argc, char** argv) {
   GetArgs(argc, argv);
-  //init sh mem
+
+
+
   for(int i=0; i<NUM_PEERS; i++) {
     pid_t f = fork();
-    if(f == 0) {
+    if(f == 0) { //if child
       return Peer(NUM_ENTRIES);
     }
   }
