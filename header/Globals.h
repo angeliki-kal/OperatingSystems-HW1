@@ -1,0 +1,6 @@
+#ifndef OS_GLOBALS_H
+#define OS_GLOBALS_H
+
+int NUM_PEERS , NUM_ITERATIONS, NUM_ENTRIES;
+
+#endif
