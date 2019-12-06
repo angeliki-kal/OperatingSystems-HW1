@@ -3,7 +3,7 @@ SOURCE_DIR = ./source
 OBJECT_DIR = ./object
 
 CC = gcc
-CFLAGS=-g -I$(INCLUDE_DIR)
+CFLAGS=-g -I$(INCLUDE_DIR) -lm
 OUT = hw1
 
 _DEPS = Globals.h Peer.h
