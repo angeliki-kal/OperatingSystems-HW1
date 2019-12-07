@@ -6,7 +6,7 @@ CC = gcc
 CFLAGS=-g -I$(INCLUDE_DIR) -lm
 OUT = hw1
 
-_DEPS = Globals.h Peer.h
+_DEPS = Globals.h Peer.h Entry.h
 #pattern matching from  _DEPS to include directory
 DEPS = $(patsubst %,$(INCLUDE_DIR)/%,$(_DEPS))
 

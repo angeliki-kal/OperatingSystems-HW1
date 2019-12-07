@@ -1,5 +1,6 @@
 #include "Peer.h"
 #include "Globals.h"
+#include "Entry.h"
 
 #include <time.h>
 #include <math.h>
@@ -13,70 +14,93 @@
 #include <errno.h>
 #include <sys/shm.h>
 
-#define LAMBDA 0.5
-
-int Peer(int sem_key, int write_sem_key, int shmem_id) {
+int Peer(int sem_key, int write_sem_key, int read_sem_key, int shmem_id) {
         //init rand num generator
         srand(getpid());
-        //create sem if it doesnt exist, else just get it
+        //create Entry sem if it doesnt exist, else just get it
         int sem_id = semget(sem_key,NUM_ENTRIES,IPC_CREAT | 0600);
         if(sem_id < 0) {
-                perror("semget in Peer: ");
+                perror("semget in Peer from Entry semaphore set: ");
                 exit(1);
         }
         //get write semaphore set
         int write_sem_id = semget(write_sem_key,NUM_ENTRIES,IPC_CREAT | 0600);
-        if(sem_id < 0) {
-                perror("semget in Peer: ");
+        if(write_sem_id < 0) {
+                perror("semget in Peer for write semaphore set: ");
+                exit(1);
+        }
+        //get read semaphore set
+        int read_sem_id = semget(read_sem_key,NUM_ENTRIES,IPC_CREAT | 0600);
+        if(read_sem_id < 0) {
+                perror("semget in Peer for read semaphore set: ");
                 exit(1);
         }
         //attach shared mem
-        unsigned int* shm_ptr = shmat(shmem_id, NULL, 0);
-        if (shm_ptr == (unsigned int*)-1) {
+        struct Entry* shm_ptr = shmat(shmem_id, NULL, 0);
+        if (shm_ptr == (struct Entry*)-1) {
                 perror("shmat: ");
                 exit(1);
         }
-        int sum_read = 0, sum_write = 0;
-        double sum_wait_t = 0;
+        int sum_read = 0, sum_write = 0; //process num of reads/writes
+        double sum_wait_t = 0;  //process write queue wait time
         printf("Peer %d started.\n", getpid());
         for(int i=0; i<NUM_ITERATIONS; i++) {
                 //choose random entry
                 int entry_index = rand() % NUM_ENTRIES;
                 //choose weather to read or write
-                if(rand() % 2) { //read entry
+
+                if(rand() % READER_RATIO) { //read entry
                         double read_time = ran_expo(LAMBDA);
+                        //check if someone is writing, if yes: wait
+                        SemOperation(read_sem_id, 0, entry_index);
+
                         printf("%d reading from entry %d for %f seconds\n", getpid(), entry_index, read_time);
                         sleep(read_time);
-                        //counter semaphore down
-                        SemOperation(sem_id, -1, entry_index);
                         //critical section for counter
-                        sum_read++;
-                        shm_ptr[entry_index]++;
-                        //counter sempahore up
+                        SemOperation(sem_id, -1, entry_index);
+                        shm_ptr[entry_index].reads++;
                         SemOperation(sem_id, 1, entry_index);
+
                         printf("%d finished reading from entry %d\n", getpid(), entry_index);
+                        sum_read++;
                 }
                 else { //write entry
                         double write_time = ran_expo(LAMBDA);
-                        //write semaphore down
                         struct timespec start, end;
-                        clock_gettime(CLOCK_REALTIME, &start); //stopwatch for wait time - start
+                        //add to writer queue
+                        clock_gettime(CLOCK_REALTIME, &start); //stopwatch for wait time in queue - start
+                        SemOperation(sem_id, -1, entry_index);
+                        if(++(shm_ptr[entry_index].writer_queue_num) == 1) {
+                          //first writer in queue, blocks readers
+                          printf("%d is the first writer in queue, queue now has %d writers\n", getpid(), shm_ptr[entry_index].writer_queue_num);
+                          SemOperation(read_sem_id, 1, entry_index);
+                        }
+                        SemOperation(sem_id, 1, entry_index);
+
+                        //start writing
                         SemOperation(write_sem_id, -1, entry_index);
-                        clock_gettime(CLOCK_REALTIME, &end); //stopwatch for wait time - end
+                        clock_gettime(CLOCK_REALTIME, &end); //stopwatch for wait time in queue - end
                         sum_wait_t += (double)(end.tv_sec - start.tv_sec) +
                                       (double)(end.tv_nsec - start.tv_nsec)/1.0e9;
                         printf("%d writing to entry %d for %f seconds\n", getpid(), entry_index, write_time);
                         sleep(write_time); //fake write time
-                        sum_write++;
-                        //counter semaphore down
-                        SemOperation(sem_id, -1, entry_index);
-                        //critical section for counter
-                        shm_ptr[entry_index]++;
-                        //counter sempahore up
-                        SemOperation(sem_id, 1, entry_index);
-                        //write semaphore up
+                        //writing done
                         SemOperation(write_sem_id, 1, entry_index);
+
+                        SemOperation(sem_id, -1, entry_index);
+                        //critical section for counters
+                        shm_ptr[entry_index].writes++;
+                        SemOperation(sem_id, 1, entry_index);
+
+                        //remove writer from queue
+                        SemOperation(sem_id, -1, entry_index);
+                        if(--(shm_ptr[entry_index].writer_queue_num) == 0) { //last writer in queue frees readers
+                          SemOperation(read_sem_id, -1, entry_index); //bring read_sem back to 0, wake up readers
+                        }
+                        SemOperation(sem_id, 1, entry_index);
+
                         printf("%d done writing to %d\n", getpid(), entry_index);
+                        sum_write++;
                 }
         }
         //print stats
