@@ -1,9 +1,9 @@
-### Operating Systems
+# Operating Systems
 
 
 ## Run:
 
-# *./hw1 int num_peers, int num_iterations, int num_entries, int read_ratio*
+ ### *./hw1 int num_peers, int num_iterations, int num_entries, int read_ratio*
 
 ## Directories:
 
