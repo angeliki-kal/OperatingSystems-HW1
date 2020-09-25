@@ -1,11 +1,11 @@
-Operating Systems
+### Operating Systems
 
 
-Run:
+## Run:
 
-./hw1 int num_peers, int num_iterations, int num_entries, int read_ratio
+# *./hw1 int num_peers, int num_iterations, int num_entries, int read_ratio*
 
-#Directories:
+## Directories:
 
 *main.c*: This is practically the coordinator of the program, which by using fork() creates Peers. In this directory semaphores and shared memory are created and respectively released.
 
@@ -18,23 +18,23 @@ Run:
 *Entry.h*: Definition of struct Entry, which contains the variables necessary to operate the Entry.
 Example: reads/writes as counters of reading/writing records in that Entry and write_queue_num which indicates how many Peers expect to write in that Entry.
 
-#Shared Memory:
+## Shared Memory:
 
 Implemented through the following functions:
 
-shmget: This function creates and initializes the shared memory to 0. Its arguments are:
+*shmget*: This function creates and initializes the shared memory to 0. Its arguments are:
 
 -   The key,
 -   the size of the memory which is the product of sizeof (struct Entry) on the number of entries we give to the program,
 -   with permissions IPC_CREAT | 0600.
 
-shmat: The arguments are:
+*shmat*: The arguments are:
 
 -   the id of the shared memory created via shmget,
 -   the address of the shared memory that we have set as NULL so that the operating system chooses the address,
 -   a flag that defines whether the memory is only for read or not. Putting 0 ensures that it is for both read and write.
 
-shmdt: Its argument is:
+*shmdt*: Its argument is:
 
 -   The pointer to the address returned by the shmat function.
 
@@ -46,19 +46,19 @@ shmctl: Its arguments are:
 -   the command that will be executed on the shared memory which in our case is the IPC_RMID that deletes the segment of the shared memory and finally,
 -   the buffer that is set to 0.
 
-#Semaphores:
+## Semaphores:
 
-sem_id: They control access to the Entry, every time we want to gain access to members of the struct Entry, for example, to increase a counter. The size of the semaphore *set* is as large as the number of Entries. That is, for every Enrty we have a semaphore. They are initialized at semval = 1.
+*sem_id*: They control access to the Entry, every time we want to gain access to members of the struct Entry, for example, to increase a counter. The size of the semaphore *set* is as large as the number of Entries. That is, for every Enrty we have a semaphore. They are initialized at semval = 1.
 
-write_sem_id: Imposes that at any given time there can be at most one writer in a specific Entry. The size of the semaphore set is as large as the number of Entries. They are initialized in semval = 1.
+*write_sem_id*: Imposes that at any given time there can be at most one writer in a specific Entry. The size of the semaphore set is as large as the number of Entries. They are initialized in semval = 1.
 
-read_sem_id: Used by Peers when attempting to read in order to check for pending writes. If a write is pending and we tried to read, or in case the information we would read would be out-of-date, we give priority to the writers, before we allow a reader to read. This guarantees the reliability and accuracy of our data, but may delay readings. However, given that in our system and in general, the number of writers is much smaller than the readers, the impact is mitigated.
+*read_sem_id*: Used by Peers when attempting to read in order to check for pending writes. If a write is pending and we tried to read, or in case the information we would read would be out-of-date, we give priority to the writers, before we allow a reader to read. This guarantees the reliability and accuracy of our data, but may delay readings. However, given that in our system and in general, the number of writers is much smaller than the readers, the impact is mitigated.
 
 The implementation is done with the help of the special case of the semop function when given argument for op being the number 0. Some process that will call semop (sem_id, 0, index) will wait until this semaphore gets the value 0.
 
 Initially, the semaphores of the set read_sem_id have the value 0. When the first writer takes over, the semval for the specific Entry changes to 1, so the next readers will be blocked until the last writer returns the semaphore value to 0 again.
 
-#Ratio of Readers/Writers:
+## Ratio of Readers/Writers:
 
 When a Peer is asked to decide whether to read or write:
 
