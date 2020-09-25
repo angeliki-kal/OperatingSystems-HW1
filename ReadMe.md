@@ -1,19 +1,11 @@
 Operating Systems
 
-Execution Example:
-
-
-
-
-
-
-![](Teliko.gif)
 
 Run:
 
 ./hw1 int num_peers, int num_iterations, int num_entries, int read_ratio
 
-Directories:
+#Directories:
 
 *main.c*: This is practically the coordinator of the program, which by using fork() creates Peers. In this directory semaphores and shared memory are created and respectively released.
 
@@ -26,7 +18,7 @@ Directories:
 *Entry.h*: Definition of struct Entry, which contains the variables necessary to operate the Entry.
 Example: reads/writes as counters of reading/writing records in that Entry and write_queue_num which indicates how many Peers expect to write in that Entry.
 
-Shared Memory:
+#Shared Memory:
 
 Implemented through the following functions:
 
@@ -54,7 +46,7 @@ shmctl: Its arguments are:
 -   the command that will be executed on the shared memory which in our case is the IPC_RMID that deletes the segment of the shared memory and finally,
 -   the buffer that is set to 0.
 
-Semaphores:
+#Semaphores:
 
 sem_id: They control access to the Entry, every time we want to gain access to members of the struct Entry, for example, to increase a counter. The size of the semaphore *set* is as large as the number of Entries. That is, for every Enrty we have a semaphore. They are initialized at semval = 1.
 
@@ -66,7 +58,7 @@ The implementation is done with the help of the special case of the semop functi
 
 Initially, the semaphores of the set read_sem_id have the value 0. When the first writer takes over, the semval for the specific Entry changes to 1, so the next readers will be blocked until the last writer returns the semaphore value to 0 again.
 
-Ratio of Readers/Writers:
+#Ratio of Readers/Writers:
 
 When a Peer is asked to decide whether to read or write:
 
