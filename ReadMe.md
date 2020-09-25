@@ -1,6 +1,12 @@
 Operating Systems
 
 Execution Example:
+
+
+
+
+
+
 ![](Teliko.gif)
 
 Run:
